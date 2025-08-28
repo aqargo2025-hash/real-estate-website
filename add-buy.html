@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إضافة عقار للبيع</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; text-align:center; background:#f9f9f9; }
+    header { background:#4CAF50; color:white; padding:1rem; position:relative; }
+    .logout-btn { position:absolute; left:10px; top:10px; background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; }
+    .button { padding:10px 20px; margin:10px; font-size:1rem; background:#008CBA; color:white; border:none; border-radius:6px; cursor:pointer; }
+
+    #previewContainer { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-top:10px; }
+    #previewContainer .media-preview { width:100%; height:120px; object-fit:cover; border-radius:8px; }
+
+    /* إخفاء الأسهم في input number */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>إضافة عقار للبيع</h1>
+    <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
+  </header>
+
+  <!-- زر الرجوع للصفحة الرئيسية -->
+  <div style="text-align:center; margin:15px;">
+    <button class="button" onclick="window.location.href='home.html'">🏠 رجوع للصفحة الرئيسية</button>
+  </div>
+
+  <!-- زر الرجوع لقائمة البيع -->
+  <div style="text-align:center; margin-bottom:10px;">
+    <button class="button" onclick="window.location.href='buy.html'">↩︎ رجوع لقائمة العقارات للبيع</button>
+  </div>
+
+  <div>
+    <input type="text" id="title" placeholder="عنوان العقار"><br>
+    <input type="text" id="location" placeholder="الموقع"><br>
+    <input type="number" id="price" placeholder="السعر (ريال)"><br>
+    <textarea id="description" placeholder="وصف العقار"></textarea><br>
+    <input type="file" id="mediaInput" accept="image/*,video/*" multiple><br>
+    <div id="previewContainer"></div>
+    <button class="button" onclick="addProperty()">➕ إضافة العقار</button>
+  </div>
+
+  <script>
+    if (localStorage.getItem('loggedIn') !== 'true') {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.removeItem('loggedIn');
+      localStorage.removeItem('username');
+      window.location.href = "login.html";
+    }
+
+    let properties = JSON.parse(localStorage.getItem('buyProperties')) || [];
+    let selectedMedia = [];
+
+    document.getElementById('mediaInput').addEventListener('change', function(event) {
+      const preview = document.getElementById('previewContainer');
+      preview.innerHTML = ''; // مسح العرض السابق
+      Array.from(event.target.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          selectedMedia.push({
+            type: file.type.startsWith('image') ? 'image' : 'video',
+            src: e.target.result
+          });
+          const mediaEl = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
+          mediaEl.src = e.target.result;
+          mediaEl.className = 'media-preview';
+          if (file.type.startsWith('video')) mediaEl.controls = true;
+          preview.appendChild(mediaEl);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    function addProperty() {
+      const title = document.getElementById('title').value.trim();
+      const location = document.getElementById('location').value.trim();
+      const price = document.getElementById('price').value.trim();
+      const description = document.getElementById('description').value.trim();
+
+      if (!title || !location || !price) {
+        alert('الرجاء إدخال جميع البيانات الأساسية');
+        return;
+      }
+
+      properties.push({
+        id: Date.now(),
+        title,
+        location,
+        price,
+        description,
+        media: selectedMedia,
+        createdAt: Date.now() // وقت الإضافة
+      });
+
+      localStorage.setItem('buyProperties', JSON.stringify(properties));
+
+      // تنظيف الحقول
+      document.getElementById('title').value = '';
+      document.getElementById('location').value = '';
+      document.getElementById('price').value = '';
+      document.getElementById('description').value = '';
+      document.getElementById('mediaInput').value = '';
+      document.getElementById('previewContainer').innerHTML = '';
+      selectedMedia = [];
+
+      alert("✅ تم إضافة العقار للبيع بنجاح!");
+    }
+  </script>
+</body>
+</html>

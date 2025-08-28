@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>الصفحة الرئيسية</title>
+  <style>
+    body {
+      font-family: 'Tahoma', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 1rem;
+      position: relative;
+    }
+    .logout-btn {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      padding: 8px 16px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .welcome {
+      margin-top: 10px;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+    .buttons {
+      margin: 2rem;
+    }
+    button {
+      padding: 1rem 2rem;
+      margin: 1rem;
+      font-size: 1.2rem;
+      cursor: pointer;
+      background-color: #008CBA;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    }
+    section {
+      padding: 2rem;
+      background-color: #eee;
+      margin-top: 2rem;
+      border-top: 2px solid #ccc;
+      
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>مرحبًا بك في منصة العقارات</h1>
+    <div class="welcome" id="welcomeMsg"></div>
+    <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
+  </header>
+
+  <div class="buttons">
+    <button onclick="showSection('rent')">🏘️ خيارات الإيجار</button>
+    <button onclick="showSection('buy')">🏠 خيارات البيع</button>
+  </div>
+
+  <section id="rent" style="display:none;">
+    <h2>خيارات الإيجار</h2>
+    <button onclick="location.href='add-rent.html'">➕ إضافة عقار للإيجار</button>
+    <button onclick="location.href='search-rent.html'">🔍 البحث عن عقار للإيجار</button>
+    <button onclick="location.href='favorites.html'">⭐ العقارات المفضلة</button>
+
+  </section>
+
+  <section id="buy" style="display:none;">
+    <h2>خيارات البيع</h2>
+    <button onclick="location.href='add-buy.html'">➕ إضافة عقار للبيع</button>
+    <button onclick="location.href='search-buy.html'">🔍 البحث عن عقار للبيع</button>
+  </section>
+
+  <script>
+    // تحقق من تسجيل الدخول
+    if (localStorage.getItem('loggedIn') !== 'true') {
+      window.location.href = "login.html";
+    }
+
+    // عرض رسالة ترحيب بالاسم
+    const username = localStorage.getItem('username');
+    if (username) {
+      document.getElementById('welcomeMsg').textContent = `👋 أهلاً ${username}`;
+    }
+
+    function logout() {
+      localStorage.removeItem('loggedIn');
+      localStorage.removeItem('username');
+      window.location.href = "login.html";
+    }
+
+    let currentSection = null;
+
+    function showSection(sectionId) {
+      if (currentSection === sectionId) {
+        document.getElementById(sectionId).style.display = 'none';
+        currentSection = null;
+      } else {
+        document.getElementById('rent').style.display = 'none';
+        document.getElementById('buy').style.display = 'none';
+        document.getElementById(sectionId).style.display = 'block';
+        currentSection = sectionId;
+      }
+    }
+  </script>
+
+</body>
+</html>

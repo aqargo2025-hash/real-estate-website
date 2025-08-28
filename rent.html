@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>عقارات للإيجار</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; text-align:center; background:#f9f9f9; }
+    header { background:#4CAF50; color:white; padding:1rem; position:relative; }
+    .logout-btn { position:absolute; left:10px; top:10px; background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; }
+    .button { padding:10px 20px; margin:10px; font-size:1rem; background:#008CBA; color:white; border:none; border-radius:6px; cursor:pointer; }
+    .edit-btn { background:#f0ad4e; margin-top:10px; }
+    .delete-btn { background:#dc3545; margin-top:10px; }
+
+    .property-card { background:#fff; border:1px solid #ccc; border-radius:8px; margin:15px auto; padding:15px; width:80%; }
+    .media-gallery { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; }
+    .media-gallery img, .media-gallery video { width:100%; height:120px; object-fit:cover; border-radius:8px; }
+
+    #previewContainer { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-top:10px; }
+    #previewContainer .media-preview { width:100%; height:120px; object-fit:cover; border-radius:8px; }
+
+    /* إخفاء الأسهم في input number */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>عقارات للإيجار</h1>
+    <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
+  </header>
+
+  <div style="text-align:center; margin-bottom:10px;">
+    <button class="button" onclick="window.location.href='home.html'">↩︎ رجوع للصفحة الرئيسية</button>
+  </div>
+
+  <div>
+    <h2 id="formTitle">إضافة عقار للإيجار</h2>
+    <input type="text" id="title" placeholder="عنوان العقار"><br>
+    <input type="text" id="location" placeholder="الموقع"><br>
+    <input type="number" id="price" placeholder="السعر الشهري (ريال)"><br>
+    <textarea id="description" placeholder="وصف العقار"></textarea><br>
+    <input type="file" id="mediaInput" accept="image/*,video/*" multiple><br>
+    <div id="previewContainer"></div>
+    <button class="button" onclick="saveProperty()" id="saveBtn">➕ إضافة</button>
+  </div>
+
+  <div>
+    <h2>العقارات المضافة</h2>
+    <div id="propertyList"></div>
+  </div>
+
+  <script>
+    if (localStorage.getItem('loggedIn') !== 'true') {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.removeItem('loggedIn');
+      localStorage.removeItem('username');
+      window.location.href = "login.html";
+    }
+
+    let properties = JSON.parse(localStorage.getItem('rentProperties')) || [];
+    let selectedMedia = [];
+    let editId = null;
+
+    document.getElementById('mediaInput').addEventListener('change', function(event) {
+      const preview = document.getElementById('previewContainer');
+      Array.from(event.target.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          selectedMedia.push({ 
+            type: file.type.startsWith('image') ? 'image' : 'video', 
+            src: e.target.result 
+          });
+          const mediaEl = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
+          mediaEl.src = e.target.result;
+          mediaEl.className = 'media-preview';
+          if (file.type.startsWith('video')) mediaEl.controls = true;
+          preview.appendChild(mediaEl);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    function saveProperty() {
+      const title = document.getElementById('title').value.trim();
+      const location = document.getElementById('location').value.trim();
+      const price = document.getElementById('price').value.trim();
+      const description = document.getElementById('description').value.trim();
+
+      if (!title || !location || !price) { 
+        alert('الرجاء إدخال جميع البيانات الأساسية'); 
+        return; 
+      }
+
+      if (editId) {
+        const property = properties.find(p => p.id === editId);
+        property.title = title;
+        property.location = location;
+        property.price = price;
+        property.description = description;
+        if (selectedMedia.length > 0) property.media = selectedMedia;
+        editId = null;
+        document.getElementById('formTitle').textContent = "إضافة عقار للإيجار";
+        document.getElementById('saveBtn').textContent = "➕ إضافة";
+      } else {
+        properties.push({ 
+          id: Date.now(), 
+          title, 
+          location, 
+          price, 
+          description, 
+          media: selectedMedia,
+          createdAt: Date.now() // 👈 جديد للشارة
+        });
+      }
+
+      localStorage.setItem('rentProperties', JSON.stringify(properties));
+
+      document.getElementById('title').value = '';
+      document.getElementById('location').value = '';
+      document.getElementById('price').value = '';
+      document.getElementById('description').value = '';
+      document.getElementById('mediaInput').value = '';
+      document.getElementById('previewContainer').innerHTML = '';
+      selectedMedia = [];
+
+      renderProperties();
+    }
+
+    function deleteProperty(id) {
+      if (confirm("هل أنت متأكد أنك تريد حذف هذا العقار؟")) {
+        properties = properties.filter(p => p.id !== id);
+        localStorage.setItem('rentProperties', JSON.stringify(properties));
+        renderProperties();
+      }
+    }
+
+    function editProperty(id) {
+      const property = properties.find(p => p.id === id);
+      document.getElementById('title').value = property.title;
+      document.getElementById('location').value = property.location;
+      document.getElementById('price').value = property.price;
+      document.getElementById('description').value = property.description;
+      document.getElementById('previewContainer').innerHTML = '';
+      selectedMedia = property.media || [];
+      selectedMedia.forEach(m => {
+        const mediaEl = document.createElement(m.type === 'image' ? 'img' : 'video');
+        mediaEl.src = m.src;
+        mediaEl.className = 'media-preview';
+        if (m.type === 'video') mediaEl.controls = true;
+        document.getElementById('previewContainer').appendChild(mediaEl);
+      });
+
+      editId = id;
+      document.getElementById('formTitle').textContent = "تعديل العقار";
+      document.getElementById('saveBtn').textContent = "💾 حفظ التعديلات";
+    }
+
+    // ===== بلوك المكتبة (مفضّلة + شارة جديد) =====
+    const FAV_KEY = 'favoriteProperties';
+    const SAVED_SEARCH_KEY = 'savedSearches';
+    const KIND = 'rent';
+    const readLS = (k, def=[]) => JSON.parse(localStorage.getItem(k) || JSON.stringify(def));
+    const writeLS = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    function isFav(id, kind){ return readLS(FAV_KEY).some(f => f.id===id && f.kind===kind); }
+    function toggleFav(id, kind){
+      let favs = readLS(FAV_KEY);
+      if(isFav(id, kind)) favs = favs.filter(f => !(f.id===id && f.kind===kind));
+      else favs.push({ id, kind });
+      writeLS(FAV_KEY, favs);
+    }
+    function isNewForSearch(property, kind, query){
+      const s = readLS(SAVED_SEARCH_KEY).find(x => x.kind===kind && x.query===query);
+      if(!s) return false;
+      return (property.createdAt||0) > (s.lastSeenAt||0);
+    }
+
+    function renderProperties() {
+      const container = document.getElementById('propertyList');
+      container.innerHTML = '';
+      const params = new URLSearchParams(location.search);
+      const query = params.get('q');
+
+      properties.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'property-card';
+        const newBadge = (query && isNewForSearch(p, KIND, query)) 
+          ? '<span style="background:#ff4757;color:#fff;padding:2px 6px;border-radius:6px;margin-right:6px;font-size:.85rem">🆕 جديد</span>' 
+          : '';
+        card.innerHTML = `
+          <h3>${newBadge}${p.title}</h3>
+          <p><strong>📍 الموقع:</strong> ${p.location}</p>
+          <p><strong>💰 السعر:</strong> ${p.price} ريال</p>
+          <p>${p.description}</p>
+        `;
+
+        const gallery = document.createElement('div');
+        gallery.className = 'media-gallery';
+        p.media.forEach(m => {
+          const mediaEl = document.createElement(m.type === 'image' ? 'img' : 'video');
+          mediaEl.src = m.src;
+          if (m.type === 'video') mediaEl.controls = true;
+          gallery.appendChild(mediaEl);
+        });
+        card.appendChild(gallery);
+
+        // ⭐ زر المفضّلة
+        const favBtn = document.createElement('button');
+        favBtn.className = 'button';
+        const paintFav = () => favBtn.textContent = isFav(p.id, KIND) ? '⭐ مضاف للمفضلة' : '☆ أضف للمفضلة';
+        paintFav();
+        favBtn.onclick = () => { toggleFav(p.id, KIND); paintFav(); };
+
+        // ✏️ زر التعديل
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✏️ تعديل';
+        editBtn.className = 'button edit-btn';
+        editBtn.onclick = () => editProperty(p.id);
+
+        // 🗑️ زر الحذف
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '🗑️ حذف';
+        delBtn.className = 'button delete-btn';
+        delBtn.onclick = () => deleteProperty(p.id);
+
+        card.appendChild(favBtn);
+        card.appendChild(editBtn);
+        card.appendChild(delBtn);
+
+        container.appendChild(card);
+      });
+    }
+
+    renderProperties();
+  </script>
+</body>
+</html>

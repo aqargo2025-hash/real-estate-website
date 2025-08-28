@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل جديد</title>
+  <style>
+    body {
+      font-family: 'Tahoma', sans-serif;
+      background-color: #f1f1f1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .register-box {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 300px;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 0.6rem;
+      margin: 0.5rem 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      width: 100%;
+      padding: 0.6rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    a {
+      display: block;
+      margin-top: 10px;
+      color: #28a745;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="register-box">
+    <h2>تسجيل جديد</h2>
+    <input type="text" id="newUsername" placeholder="اسم المستخدم">
+    <input type="email" id="newEmail" placeholder="البريد الإلكتروني">
+    <input type="password" id="newPassword" placeholder="كلمة المرور">
+    <button onclick="register()">إنشاء حساب</button>
+    <a href="login.html">لديك حساب؟ سجل الدخول</a>
+  </div>
+
+  <script>
+    function register() {
+      const username = document.getElementById('newUsername').value;
+      const email = document.getElementById('newEmail').value;
+      const password = document.getElementById('newPassword').value;
+
+      if (username && email && password) {
+        localStorage.setItem('username', username);
+        localStorage.setItem('email', email);
+        localStorage.setItem('password', password);
+
+        alert("تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن");
+        window.location.href = "login.html";
+      } else {
+        alert("من فضلك أدخل كل البيانات");
+      }
+    }
+  </script>
+
+</body>
+</html>
+

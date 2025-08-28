@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>العقارات المفضلة ⭐</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; text-align:center; background:#f9f9f9; }
+    header { background:#ff9800; color:white; padding:1rem; position:relative; }
+    .logout-btn { position:absolute; left:10px; top:10px; background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; }
+    .button { padding:10px 20px; margin:10px; font-size:1rem; background:#008CBA; color:white; border:none; border-radius:6px; cursor:pointer; }
+    .remove-btn { background:#dc3545; margin-top:10px; }
+    .property-card { background:#fff; border:1px solid #ccc; border-radius:8px; margin:15px auto; padding:15px; width:80%; text-align:right; }
+    .media-gallery { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-top:10px; }
+    .media-gallery img, .media-gallery video { width:100%; height:120px; object-fit:cover; border-radius:8px; }
+    .filter-box { margin: 20px; }
+    select { padding:8px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⭐ العقارات المفضلة</h1>
+    <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
+  </header>
+
+  <div style="margin:20px;">
+    <button class="button" onclick="window.location.href='home.html'">🏠 رجوع للصفحة الرئيسية</button>
+  </div>
+
+  <!-- فلترة -->
+  <div class="filter-box">
+    <label for="filter">🔎 عرض:</label>
+    <select id="filter" onchange="renderFavorites()">
+      <option value="all">الكل</option>
+      <option value="rent">الإيجار فقط</option>
+      <option value="buy">البيع فقط</option>
+    </select>
+  </div>
+
+  <div id="favoritesList"></div>
+
+  <script>
+    if (localStorage.getItem('loggedIn') !== 'true') {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.removeItem('loggedIn');
+      localStorage.removeItem('username');
+      window.location.href = "login.html";
+    }
+
+    function toggleFavoriteFromFavorites(id, type) {
+      let properties = JSON.parse(localStorage.getItem(type)) || [];
+      const property = properties.find(p => p.id === id);
+      if (property) property.favorite = false;
+      localStorage.setItem(type, JSON.stringify(properties));
+      renderFavorites();
+    }
+
+    function renderFavorites() {
+      const favoritesList = document.getElementById('favoritesList');
+      favoritesList.innerHTML = '';
+
+      const rentProperties = JSON.parse(localStorage.getItem('rentProperties')) || [];
+      const buyProperties = JSON.parse(localStorage.getItem('buyProperties')) || [];
+
+      const allFavorites = [
+        ...rentProperties.filter(p => p.favorite).map(p => ({...p, type: 'rentProperties'})),
+        ...buyProperties.filter(p => p.favorite).map(p => ({...p, type: 'buyProperties'}))
+      ];
+
+      const filter = document.getElementById('filter').value;
+      let filteredFavorites = allFavorites;
+      if (filter === 'rent') {
+        filteredFavorites = allFavorites.filter(p => p.type === 'rentProperties');
+      } else if (filter === 'buy') {
+        filteredFavorites = allFavorites.filter(p => p.type === 'buyProperties');
+      }
+
+      if (filteredFavorites.length === 0) {
+        favoritesList.innerHTML = '<p>❌ لا توجد عقارات مفضلة حالياً</p>';
+        return;
+      }
+
+      filteredFavorites.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'property-card';
+        card.innerHTML = `
+          <h3>${p.title}</h3>
+          <p><strong>📍 الموقع:</strong> ${p.location || "غير محدد"}</p>
+          <p><strong>💰 السعر:</strong> ${p.price || "غير محدد"} ريال</p>
+          <p><strong>📝 الوصف:</strong> ${p.description || ""}</p>
+          <p><strong>🏷️ النوع:</strong> ${p.type === 'rentProperties' ? 'إيجار' : 'بيع'}</p>
+        `;
+
+        const gallery = document.createElement('div');
+        gallery.className = 'media-gallery';
+        p.media?.forEach(m => {
+          const mediaEl = document.createElement(m.type === 'image' ? 'img' : 'video');
+          mediaEl.src = m.src;
+          if (m.type === 'video') mediaEl.controls = true;
+          gallery.appendChild(mediaEl);
+        });
+        card.appendChild(gallery);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = "❌ إزالة من المفضلة";
+        removeBtn.className = "button remove-btn";
+        removeBtn.onclick = () => toggleFavoriteFromFavorites(p.id, p.type);
+        card.appendChild(removeBtn);
+
+        favoritesList.appendChild(card);
+      });
+    }
+
+    renderFavorites();
+  </script>
+</body>
+</html>

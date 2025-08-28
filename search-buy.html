@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>البحث عن عقار للبيع</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; text-align:center; background:#f9f9f9; }
+    header { background:#4CAF50; color:white; padding:1rem; position:relative; }
+    .logout-btn { position:absolute; left:10px; top:10px; background:#dc3545; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; }
+    .button { padding:10px 20px; margin:10px; font-size:1rem; background:#008CBA; color:white; border:none; border-radius:6px; cursor:pointer; }
+
+    .property-card { background:#fff; border:1px solid #ccc; border-radius:8px; margin:15px auto; padding:15px; width:80%; text-align:right; }
+    .media-gallery { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-top:10px; }
+    .media-gallery img, .media-gallery video { width:100%; height:120px; object-fit:cover; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔍 البحث عن عقار للبيع</h1>
+    <button class="logout-btn" onclick="logout()">تسجيل خروج</button>
+  </header>
+
+  <div style="text-align:center; margin:20px;">
+    <input type="text" id="searchInput" placeholder="اكتب العنوان أو الموقع أو الوصف" style="padding:10px; width:60%;">
+    <button class="button" onclick="searchProperty()">بحث</button>
+    <button class="button" onclick="saveSearch()">💾 حفظ البحث</button>
+    <button class="button" onclick="window.location.href='buy.html'">↩︎ رجوع</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    if (localStorage.getItem('loggedIn') !== 'true') {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.removeItem('loggedIn');
+      localStorage.removeItem('username');
+      window.location.href = "login.html";
+    }
+
+    let properties = JSON.parse(localStorage.getItem('buyProperties')) || [];
+
+    const FAV_KEY = 'favoriteProperties';
+    const SAVED_SEARCH_KEY = 'savedSearches';
+    const KIND = 'buy';
+
+    const readLS = (k, def=[]) => JSON.parse(localStorage.getItem(k) || JSON.stringify(def));
+    const writeLS = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+    function isFav(id, kind){ return readLS(FAV_KEY).some(f => f.id===id && f.kind===kind); }
+    function toggleFav(id, kind, btn){
+      let favs = readLS(FAV_KEY);
+      if(isFav(id, kind)) favs = favs.filter(f => !(f.id===id && f.kind===kind));
+      else favs.push({ id, kind });
+      writeLS(FAV_KEY, favs);
+      btn.textContent = isFav(id, kind) ? '⭐ مضاف للمفضلة' : '☆ أضف للمفضلة';
+    }
+
+    function saveSearch() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      if (!query) return alert("⚠️ أدخل كلمة قبل حفظ البحث");
+
+      let searches = readLS(SAVED_SEARCH_KEY);
+      if(searches.find(s => s.kind===KIND && s.query===query)) {
+        alert("🔔 هذا البحث محفوظ مسبقًا");
+        return;
+      }
+      searches.push({ id: Date.now(), kind: KIND, query, lastSeenAt: 0 });
+      writeLS(SAVED_SEARCH_KEY, searches);
+      alert("✅ تم حفظ البحث");
+    }
+
+    function touchSavedSearch(query){
+      let searches = readLS(SAVED_SEARCH_KEY);
+      const i = searches.findIndex(s => s.kind===KIND && s.query===query);
+      if(i !== -1){ searches[i].lastSeenAt = Date.now(); writeLS(SAVED_SEARCH_KEY, searches); }
+    }
+
+    function searchProperty() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      if (!query) {
+        resultsDiv.innerHTML = '<p>⚠️ الرجاء كتابة كلمة للبحث</p>';
+        return;
+      }
+
+      // تحديث وقت آخر بحث
+      touchSavedSearch(query);
+
+      const filtered = properties.filter(p =>
+        p.title.toLowerCase().includes(query) ||
+        p.location?.toLowerCase().includes(query) ||
+        p.description?.toLowerCase().includes(query)
+      );
+
+      if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<p>❌ لا توجد نتائج مطابقة</p>';
+        return;
+      }
+
+      filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'property-card';
+        card.innerHTML = `
+          <h3>${p.title}</h3>
+          <p><strong>📍 الموقع:</strong> ${p.location || "غير محدد"}</p>
+          <p><strong>💰 السعر:</strong> ${p.price || "غير محدد"} ريال</p>
+          <p><strong>📝 الوصف:</strong> ${p.description || ""}</p>
+        `;
+
+        const gallery = document.createElement('div');
+        gallery.className = 'media-gallery';
+        p.media.forEach(m => {
+          const mediaEl = document.createElement(m.type === 'image' ? 'img' : 'video');
+          mediaEl.src = m.src;
+          if (m.type === 'video') mediaEl.controls = true;
+          gallery.appendChild(mediaEl);
+        });
+        card.appendChild(gallery);
+
+        // ⭐ زر المفضلة
+        const favBtn = document.createElement('button');
+        favBtn.className = 'button';
+        favBtn.textContent = isFav(p.id, KIND) ? '⭐ مضاف للمفضلة' : '☆ أضف للمفضلة';
+        favBtn.onclick = () => toggleFav(p.id, KIND, favBtn);
+        card.appendChild(favBtn);
+
+        resultsDiv.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>
